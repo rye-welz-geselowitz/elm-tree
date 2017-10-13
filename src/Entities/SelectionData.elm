@@ -16,11 +16,13 @@ import Dict exposing (Dict)
 type SelectionData
     = SelectionData (Dict Int SelectionDatum) Int
 
+
 type alias SelectionDatum =
-  {
-    selected: Bool,
-    order: Int
-  }
+    { selected : Bool
+    , order : Int
+    }
+
+
 
 --EXPOSED FUNCTIONS
 
@@ -42,7 +44,7 @@ empty =
 
 selectById : Int -> SelectionData -> SelectionData
 selectById id selectionData =
-    case isSelected id selectionData of
+    case isSelected selectionData id of
         True ->
             selectionData
 
@@ -52,7 +54,7 @@ selectById id selectionData =
 
 deselectById : Int -> SelectionData -> SelectionData
 deselectById id selectionData =
-    case isSelected id selectionData of
+    case isSelected selectionData id of
         True ->
             updateSelectionStatus id False Nothing selectionData
 
@@ -60,16 +62,18 @@ deselectById id selectionData =
             selectionData
 
 
-isSelected : Int -> SelectionData -> Bool
-isSelected id (SelectionData selectionStatusDict _ ) =
+isSelected : SelectionData -> Int -> Bool
+isSelected (SelectionData selectionStatusDict _) id =
     let
-      maybeDatum = (Dict.get id selectionStatusDict)
+        maybeDatum =
+            Dict.get id selectionStatusDict
     in
     case maybeDatum of
-      Nothing ->
-        False
-      Just datum ->
-        datum.selected
+        Nothing ->
+            False
+
+        Just datum ->
+            datum.selected
 
 
 compareOrderAdded : SelectionData -> (a -> Int) -> a -> a -> Order
@@ -77,13 +81,15 @@ compareOrderAdded (SelectionData selectionDict _) getId a b =
     let
         order item =
             let
-              maybeDatum = (Dict.get (getId item) selectionDict)
+                maybeDatum =
+                    Dict.get (getId item) selectionDict
             in
-              case maybeDatum of
+            case maybeDatum of
                 Nothing ->
-                  -1
+                    -1
+
                 Just datum ->
-                  datum.order
+                    datum.order
     in
     if order a > order b then
         GT
@@ -119,25 +125,26 @@ build ids isSelectedFunc maybeOrderAddedFunc =
 updateSelectionStatus : Int -> Bool -> Maybe Int -> SelectionData -> SelectionData
 updateSelectionStatus id selectedStatus customAddedIndex (SelectionData selectionDict lastAddedIndex) =
     let
-
-        incrementedIndex = lastAddedIndex + 1
+        incrementedIndex =
+            lastAddedIndex + 1
 
         index =
-          case (customAddedIndex, selectedStatus) of
-            (Nothing, True) ->
-              incrementedIndex
-            (Just someIndex, True) ->
-              someIndex
-            (_, False) ->
-              -1
+            case ( customAddedIndex, selectedStatus ) of
+                ( Nothing, True ) ->
+                    incrementedIndex
+
+                ( Just someIndex, True ) ->
+                    someIndex
+
+                ( _, False ) ->
+                    -1
+
         newDatum =
-          {
-            selected = selectedStatus,
-            order = index
-          }
+            { selected = selectedStatus
+            , order = index
+            }
 
         newSelectionStatusDict =
             Dict.insert id newDatum selectionDict
-
     in
     SelectionData newSelectionStatusDict index

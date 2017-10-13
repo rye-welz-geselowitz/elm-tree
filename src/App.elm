@@ -1,8 +1,9 @@
 module App exposing (..)
 
+import Entities.SelectableList as SelectableList
 import Helpers.KeyboardNavigation exposing (FocusResult)
 import Html exposing (Html, div, img, text)
-import Views.SelectableList as SelectableList
+import Views.SelectableList as SelectableListView
 
 
 type alias Model =
@@ -45,7 +46,7 @@ view : Model -> Html Msg
 view model =
     div
         []
-        [ SelectableList.view listConfig model.selectableListState ]
+        [ SelectableListView.view listConfig model.selectableListState ]
 
 
 listConfig : SelectableList.Config Msg User

@@ -48,7 +48,7 @@ button{
 #searchbox{
   display: inline-block;
   border: none;
-
+  margin: 0px;
 }
 
 .itemslist{
