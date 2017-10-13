@@ -131,9 +131,9 @@ onInput config state =
             Json.map updateFunc E.targetValue
 
 
-onKeyDown : Config msg item -> State -> Attribute msg
-onKeyDown config state =
-    KeyboardNavigation.onKeyDown (handleKeyDown config state Nothing) validKeys
+onKeyDown : Config msg item -> State -> Maybe item -> Attribute msg
+onKeyDown config state maybeItem =
+    KeyboardNavigation.onKeyDown (handleKeyDown config state maybeItem) validKeys
 
 
 setFocus : State -> (FocusResult -> msg) -> Cmd msg
@@ -270,8 +270,16 @@ trySelectItem config state maybeActiveId =
 
 tryDeleteItem : Config msg item -> State -> Maybe item -> State
 tryDeleteItem config state maybeCurrentItem =
+    let
+        a =
+            Debug.log "hi" "hello"
+    in
     case maybeCurrentItem of
         Just currentItem ->
+            let
+                d =
+                    Debug.log "this" "is a thing"
+            in
             state
                 |> navigateTags config Previous
                 |> deselectItem config (config.itemId currentItem)

@@ -1,5 +1,6 @@
 body {
   text-align: center;
+  padding: 20px;
 
 }
 
@@ -11,24 +12,27 @@ img {
 .selectablelist{
   width: 60%;
   display: inline-block;
+  padding: 20px 10px 10px 10px;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
 
 }
 .selected{
   color: gray;
-
 }
 
 .tagsview{
   text-align: left;
+  padding-left: 20px;
 
 }
 .tagList{
   display: inline-block;
 
+
 }
 .tag{
   display: inline-block;
-  padding: 0px 5px;
+  padding: 0px 5px 0px 10px;
   margin-right: 5px;
   list-style-position: inside;
   border: solid 1px black;
@@ -40,9 +44,10 @@ img {
   background: lightgray;
 }
 
-button{
+.deletebutton{
   border: none;
   background: transparent;
+  margin-bottom: 2px;
 }
 
 #searchbox{
@@ -53,7 +58,7 @@ button{
 
 .itemslist{
   list-style-type: none;
-  padding: 10px;
+
 }
 
 .item{
@@ -61,7 +66,47 @@ button{
   padding: 5px;
 }
 
+.tagtext{
+  display: inline-block;
+  font-size: 12px;
+}
+
 #searchbox:focus {
     outline-color: transparent;
     outline-style: none;
   }
+
+.avatar{
+  width: 50px;
+  height: 50px;
+  background-color: gray;
+  text-align: center;
+  border-radius: 50%;
+  -webkit-border-radius: 50%;
+  -moz-border-radius: 50%;
+  display: inline-block;
+  margin-right: 20px;
+}
+
+.avatar.selected{
+  background-color: lightgray;
+}
+
+.initials {
+  position: relative;
+  top: 12px;
+  font-size: 25px;
+  line-height: 25px;
+  color: #fff;
+  font-family: "Courier New", monospace;
+  font-weight: bold;
+}
+
+.displaytext{
+  display: inline-block;
+  position: relative;
+  top: 12px;
+  font-size: 18px;
+  line-height: 12px;
+
+}

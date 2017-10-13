@@ -2,7 +2,7 @@ module App exposing (..)
 
 import Entities.SelectableList as SelectableList
 import Helpers.KeyboardNavigation exposing (FocusResult)
-import Html exposing (Html, div, img, text)
+import Html exposing (Html, div, h4, img, text)
 import Views.SelectableList as SelectableListView
 
 
@@ -46,7 +46,9 @@ view : Model -> Html Msg
 view model =
     div
         []
-        [ SelectableListView.view listConfig model.selectableListState ]
+        [ h4 [] [ text "Select Your Favorite..." ]
+        , SelectableListView.view listConfig model.selectableListState
+        ]
 
 
 listConfig : SelectableList.Config Msg User

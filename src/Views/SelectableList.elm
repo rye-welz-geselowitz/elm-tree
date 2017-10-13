@@ -14,8 +14,29 @@ import Entities.SelectableList
         , selectedItems
         , tagElementId
         )
-import Html exposing (Attribute, Html, button, div, h4, input, li, text, ul)
-import Html.Attributes exposing (attribute, class, classList, id, placeholder, tabindex, value)
+import Html
+    exposing
+        ( Attribute
+        , Html
+        , button
+        , div
+        , h4
+        , input
+        , li
+        , span
+        , text
+        , ul
+        )
+import Html.Attributes
+    exposing
+        ( attribute
+        , class
+        , classList
+        , id
+        , placeholder
+        , tabindex
+        , value
+        )
 
 
 view : Config msg item -> State -> Html msg
@@ -42,7 +63,7 @@ tagsView config state =
             , tabindex 0
             , value (searchText state)
             , onInput config state
-            , onKeyDown config state
+            , onKeyDown config state Nothing
             ]
             []
         ]
@@ -54,10 +75,14 @@ tagView config state idx item =
         [ class "tag"
         , id (tagElementId idx)
         , tabindex -1
-        , onKeyDown config state
+        , onKeyDown config state (Just item)
         ]
-        [ text (config.tagDisplayText item)
-        , button [ onClick config state item False ] [ text "x" ]
+        [ div [ class "tagtext" ] [ text (config.tagDisplayText item) ]
+        , button
+            [ onClick config state item False
+            , class "deletebutton"
+            ]
+            [ text "x" ]
         ]
 
 
@@ -73,6 +98,13 @@ listView config state =
 
 itemView : Config msg item -> State -> item -> Html msg
 itemView config state item =
+    let
+        displayText =
+            config.listDisplayText item
+
+        initial =
+            displayText |> String.slice 0 1 |> String.toUpper
+    in
     li
         [ onClick config state item True
         , classList
@@ -81,5 +113,16 @@ itemView config state item =
             , ( "item", True )
             ]
         ]
-        [ text (config.listDisplayText item)
+        [ div
+            [ classList
+                [ ( "avatar", True )
+                , ( "selected", isItemSelected config state item )
+                ]
+            ]
+            [ span [ class "initials" ] [ text initial ] ]
+        , div
+            [ class "displaytext" ]
+            [ text
+                displayText
+            ]
         ]
