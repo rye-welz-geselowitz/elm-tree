@@ -50,10 +50,6 @@ deselectById : Int -> SelectionData -> SelectionData
 deselectById id selectionData =
     case isSelected id selectionData of
         True ->
-            let
-                a =
-                    Debug.log "hi" "hey"
-            in
             updateSelectionStatus id False Nothing selectionData
 
         False ->

@@ -1,12 +1,12 @@
-module Views.SelectableList exposing (Config, State, emptyState, view)
+module Views.SelectableList exposing (Config, State, emptyState, view, setFocus)
 
-import Dom
+
 import Entities.SelectionData as SelectionData exposing (SelectionData)
 import Html exposing (Attribute, Html, button, div, h4, li, text, ul, input)
 import Html.Attributes exposing (attribute, id, tabindex, classList, class, tabindex)
 import Html.Events as E
 import Json.Decode as Json
-import Task
+import Helpers.KeyboardNavigation as KeyboardNavigation exposing (Key(..), Direction(..), FocusResult)
 
 
 type alias Config msg item =
@@ -15,16 +15,20 @@ type alias Config msg item =
     , tagDisplayText : item -> String
     , itemId : item -> Int
     , items : List item
+    , filterFunction: String -> item -> Bool
     }
 
+setFocus : State -> (FocusResult -> msg) -> Cmd msg
+setFocus state postFocus =
+  KeyboardNavigation.setFocus (getMaybeFocusId state) postFocus
 
 type State
-    = State (Maybe String) SelectionData String
+    = State (Maybe Int) (Maybe String)  SelectionData String
 
 
 emptyState : State
 emptyState =
-    State Nothing SelectionData.empty ""
+    State Nothing Nothing SelectionData.empty ""
 
 
 
@@ -39,15 +43,24 @@ tagsView config state =
     div [class "tagsview"]
         [ ul [class "tagList"]
             (selectedItems config state
-                |> List.map (tagView config state)
+                |> List.indexedMap (\idx item -> tagView config state idx item)
             )
-        , input [id "searchbox", tabindex 0] []
+        , input [id "searchbox",
+                  tabindex 0,
+                  onInput config state,
+                  KeyboardNavigation.onKeyDown (handleKeyDown config state Nothing) validKeys
+                  ] []
         ]
 
+validKeys : List Key
+validKeys = [RETURN, DOWN, UP, LEFT, RIGHT, DELETE]
 
-tagView : Config msg item -> State -> item -> Html msg
-tagView config state item =
-    li [  class "tag" ]
+tagView : Config msg item -> State -> Int -> item -> Html msg
+tagView config state idx item =
+    li [  class "tag",
+          id (tagElementId idx),
+          tabindex -1,
+          KeyboardNavigation.onKeyDown (handleKeyDown config state (Just item)) validKeys]
         [ text (config.tagDisplayText item),
           button [onClick config state item False] [text "x"]
         ]
@@ -64,49 +77,209 @@ listView config state =
 
 
 itemView : Config msg item -> State -> item -> Html msg
-itemView config (State maybeFocusId selectionData searchText) item =
+itemView config state item =
     let
+
       isItemSelected =
-        SelectionData.isSelected (config.itemId item) selectionData
+        SelectionData.isSelected (config.itemId item) (getSelectionData state)
+
+      isItemActive =
+        case getMaybeActiveId state of
+          Nothing -> False
+          Just activeId ->
+            (config.itemId item) == activeId
     in
-    li [ onClick config (State maybeFocusId selectionData searchText)  item True,
-          classList [("selected", isItemSelected)]
+    li [ onClick config state item True,
+          classList [("selected", isItemSelected), ("active", isItemActive)]
     ]
         [ text (config.listDisplayText item)
         ]
 
 --Custom Events
 onClick : Config msg item -> State -> item -> Bool -> Attribute msg
-onClick config (State maybeFocusId selectionData searchText) item newSelectionStatus =
+onClick config state item newSelectionStatus =
     let
-        itemId =
-            config.itemId item
-
-        newSelectionData =
+        itemId = (config.itemId item)
+        newState =
             case newSelectionStatus of
                 True ->
-                    SelectionData.selectById itemId selectionData
+                    selectItem config state itemId
 
                 False ->
-                    SelectionData.deselectById itemId selectionData
+                    deselectItem config state itemId
     in
     E.on "click" <|
         Json.map config.toMsg <|
-            Json.succeed (State maybeFocusId newSelectionData searchText)
+            Json.succeed (newState)
 
 
+
+onInput : Config msg item -> State -> Attribute msg
+onInput config state   =
+    E.on "input" <|
+        Json.map config.toMsg <|
+          (Json.map (\str -> updateSearchText str state) E.targetValue)
+
+
+
+handleKeyDown: Config msg item -> State -> Maybe item -> Key -> msg
+handleKeyDown config state maybeCurrentItem key =
+  let
+    maybeActiveId = getMaybeActiveId state
+    newState =
+      case key of
+        RETURN ->
+          case maybeActiveId of
+            Just activeId ->
+              selectItem config state activeId
+            Nothing ->
+              state
+        UP ->
+          navigateListItems config state Previous
+
+        DOWN ->
+          navigateListItems config state Next
+        LEFT ->
+          navigateTags config state Previous
+        RIGHT ->
+          navigateTags config state Next
+        DELETE ->
+          let
+            newSelection =
+              case maybeCurrentItem of
+                Just currentItem ->
+                  deselectItem config state (config.itemId currentItem)
+                Nothing ->
+                  state
+          in
+           navigateTags config state Previous
+            |> (\state ->
+                  case maybeCurrentItem of
+                    Just currentItem ->
+                      deselectItem config state (config.itemId currentItem)
+                    Nothing ->
+                      state
+                )
+        _ ->
+          state
+  in
+  config.toMsg newState
+
+navigateTags : Config msg item -> State -> Direction -> State
+navigateTags config state direction =
+  let
+    maybeCurrentFocusId = getMaybeFocusId state
+
+    selectedIds =
+      (selectedItems config state)
+      |> List.indexedMap (\idx item -> (tagElementId idx) )
+      |> (\l -> l ++ ["searchbox"])
+
+    newMaybeFocusId =
+      case (maybeCurrentFocusId, direction) of
+        (Nothing, Previous) ->
+          selectedIds |> List.reverse |> List.head
+
+        (Nothing, Next) ->
+          List.head selectedIds
+
+        (Just currentId, direction) ->
+          (KeyboardNavigation.navigateWrappedList selectedIds currentId direction)
+  in
+  state
+   |> updateMaybeFocusId newMaybeFocusId
+
+navigateListItems : Config msg item -> State -> Direction -> State
+navigateListItems config state direction =
+  let
+    maybeActiveId = getMaybeActiveId state
+    filteredIds =
+      (filteredItems config state)
+      |> List.map (\item -> (config.itemId item) )
+
+    newMaybeActiveId =
+      case (maybeActiveId, direction) of
+        (Nothing, Previous) ->
+          filteredIds |> List.reverse |> List.head
+
+        (Nothing, Next) ->
+          List.head filteredIds
+
+        (Just currentId, direction) ->
+          (KeyboardNavigation.navigateWrappedList filteredIds currentId direction)
+  in
+  state
+   |> updateMaybeActiveId newMaybeActiveId
+
+
+
+
+--update
+
+updateSearchText : String -> State -> State
+updateSearchText searchText (State maybeActiveId maybeFocusId selectionData _) =
+  State maybeActiveId maybeFocusId selectionData searchText
+
+updateSelectionData : SelectionData -> State -> State
+updateSelectionData selectionData (State maybeActiveId maybeFocusId _ searchText) =
+  State maybeActiveId maybeFocusId selectionData searchText
+
+updateMaybeFocusId : Maybe String -> State -> State
+updateMaybeFocusId maybeFocusId (State maybeActiveId _ selectionData searchText) =
+  State maybeActiveId maybeFocusId selectionData searchText
+
+
+updateMaybeActiveId : Maybe Int -> State -> State
+updateMaybeActiveId maybeActiveId (State _ maybeFocusId selectionData searchText) =
+  State maybeActiveId maybeFocusId selectionData searchText
+
+getSelectionData : State -> SelectionData
+getSelectionData (State _ _ selectionData _) =
+  selectionData
+
+getMaybeActiveId : State -> Maybe Int
+getMaybeActiveId (State maybeActiveId _ _ _) =
+  maybeActiveId
+
+getMaybeFocusId : State -> Maybe String
+getMaybeFocusId (State _ maybeFocusId _ _) =
+  maybeFocusId
 
 --Helpers
-filteredItems : Config msg item -> State -> List item
-filteredItems config (State _ selectionData searchText) =
-    config.items
 
+selectItem : Config msg item -> State -> Int -> State
+selectItem config state itemId =
+  let
+    selectionData = getSelectionData state
+  in
+  state
+    |> updateSelectionData (SelectionData.selectById itemId selectionData)
+    |> updateSearchText ""
+    |> updateMaybeFocusId (Just "searchbox")
+
+deselectItem : Config msg item -> State -> Int -> State
+deselectItem config state itemId =
+  let
+    selectionData = getSelectionData state
+  in
+  state
+    |> updateSelectionData (SelectionData.deselectById itemId selectionData)
+
+filteredItems : Config msg item -> State -> List item
+filteredItems config (State _ _ selectionData searchText) =
+    config.items
+    |> List.filter (config.filterFunction searchText)
+
+tagElementId : Int -> String
+tagElementId  idx =
+  "tag-"++(toString idx)
 
 
 selectedItems : Config msg item -> State -> List item
-selectedItems config (State _ selectionData searchText) =
-    List.filter
+selectedItems config (State _ _ selectionData searchText) =
+   config.items
+   |> ( List.filter
         (\item ->
             SelectionData.isSelected (config.itemId item) selectionData
-        )
-        config.items
+        ) )
+    |> (List.sortWith (SelectionData.compareOrderAdded  selectionData config.itemId))
