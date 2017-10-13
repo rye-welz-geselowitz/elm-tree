@@ -14,9 +14,13 @@ import Dict exposing (Dict)
 
 
 type SelectionData
-    = SelectionData (Dict Int Bool) (Dict Int Int) Int
+    = SelectionData (Dict Int SelectionDatum) Int
 
-
+type alias SelectionDatum =
+  {
+    selected: Bool,
+    order: Int
+  }
 
 --EXPOSED FUNCTIONS
 
@@ -33,7 +37,7 @@ buildUnordered ids isSelectedFunc =
 
 empty : SelectionData
 empty =
-    SelectionData Dict.empty Dict.empty 0
+    SelectionData Dict.empty 0
 
 
 selectById : Int -> SelectionData -> SelectionData
@@ -57,15 +61,29 @@ deselectById id selectionData =
 
 
 isSelected : Int -> SelectionData -> Bool
-isSelected id (SelectionData selectionStatusDict _ _) =
-    Maybe.withDefault False (Dict.get id selectionStatusDict)
+isSelected id (SelectionData selectionStatusDict _ ) =
+    let
+      maybeDatum = (Dict.get id selectionStatusDict)
+    in
+    case maybeDatum of
+      Nothing ->
+        False
+      Just datum ->
+        datum.selected
 
 
 compareOrderAdded : SelectionData -> (a -> Int) -> a -> a -> Order
-compareOrderAdded (SelectionData _ orderAddedDict _) getId a b =
+compareOrderAdded (SelectionData selectionDict _) getId a b =
     let
         order item =
-            Maybe.withDefault 0 (Dict.get (getId item) orderAddedDict)
+            let
+              maybeDatum = (Dict.get (getId item) selectionDict)
+            in
+              case maybeDatum of
+                Nothing ->
+                  -1
+                Just datum ->
+                  datum.order
     in
     if order a > order b then
         GT
@@ -99,18 +117,27 @@ build ids isSelectedFunc maybeOrderAddedFunc =
 
 
 updateSelectionStatus : Int -> Bool -> Maybe Int -> SelectionData -> SelectionData
-updateSelectionStatus id selectedStatus customAddedIndex (SelectionData selectionStatusDict orderAddedDict lastAddedIndex) =
+updateSelectionStatus id selectedStatus customAddedIndex (SelectionData selectionDict lastAddedIndex) =
     let
+
+        incrementedIndex = lastAddedIndex + 1
+
+        index =
+          case (customAddedIndex, selectedStatus) of
+            (Nothing, True) ->
+              incrementedIndex
+            (Just someIndex, True) ->
+              someIndex
+            (_, False) ->
+              -1
+        newDatum =
+          {
+            selected = selectedStatus,
+            order = index
+          }
+
         newSelectionStatusDict =
-            Dict.insert id selectedStatus selectionStatusDict
+            Dict.insert id newDatum selectionDict
 
-        newLastAddedIndex =
-            lastAddedIndex + 1
-
-        newOrderAddedDict =
-            Dict.insert
-                id
-                (Maybe.withDefault newLastAddedIndex customAddedIndex)
-                orderAddedDict
     in
-    SelectionData newSelectionStatusDict newOrderAddedDict newLastAddedIndex
+    SelectionData newSelectionStatusDict index

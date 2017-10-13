@@ -346,6 +346,8 @@ deselectItem config state itemId =
     in
     state
         |> updateSelectionData (SelectionData.deselectById itemId selectionData)
+        |> updateMaybeActiveId Nothing
+        |> updateSearchText ""
 
 
 filteredItems : Config msg item -> State -> List item
