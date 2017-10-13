@@ -23,6 +23,7 @@ img {
 .tagsview{
   text-align: left;
   padding-left: 20px;
+  border-bottom: solid 1px lightgray;
 
 }
 .tagList{
@@ -53,7 +54,7 @@ img {
 #searchbox{
   display: inline-block;
   border: none;
-  margin: 0px;
+  margin-bottom: 15px;
 }
 
 .itemslist{
