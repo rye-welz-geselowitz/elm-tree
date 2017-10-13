@@ -11,6 +11,7 @@ img {
 .selectablelist{
   width: 60%;
   display: inline-block;
+
 }
 .selected{
   color: gray;
@@ -19,7 +20,7 @@ img {
 
 .tagsview{
   text-align: left;
-  border-bottom: solid 1px gray;
+
 }
 .tagList{
   display: inline-block;
@@ -32,6 +33,7 @@ img {
   list-style-position: inside;
   border: solid 1px black;
   border-radius: 25px;
+  margin-bottom: 0px;
 }
 
 .active{
@@ -46,19 +48,17 @@ button{
 #searchbox{
   display: inline-block;
   border: none;
-  margin: 5px;
 
 }
 
 .itemslist{
   list-style-type: none;
-  padding: 0px;
+  padding: 10px;
 }
 
 .item{
-  border-bottom: solid 1px gray;
-  padding: 10px;
   text-align: left;
+  padding: 5px;
 }
 
 #searchbox:focus {

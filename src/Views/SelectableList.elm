@@ -332,10 +332,14 @@ selectItem config state itemId =
         selectionData =
             getSelectionData state
     in
-    state
-        |> updateSelectionData (SelectionData.selectById itemId selectionData)
-        |> updateSearchText ""
-        |> updateMaybeFocusId (Just "searchbox")
+    case SelectionData.isSelected itemId selectionData of
+      True ->
+        state
+      False ->
+        state
+            |> updateSelectionData (SelectionData.selectById itemId selectionData)
+            |> updateSearchText ""
+            |> updateMaybeFocusId (Just "searchbox")
 
 
 deselectItem : Config msg item -> State -> Int -> State
