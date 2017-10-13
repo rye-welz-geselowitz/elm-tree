@@ -118,10 +118,6 @@ onInput : Config msg item -> State -> Attribute msg
 onInput config state =
     let
         updateFunc str =
-            let
-                filteredState =
-                    updateSearchText str state
-            in
             state
                 |> updateSearchText str
                 |> setActiveItemOnFilter config
