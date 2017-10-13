@@ -3,7 +3,7 @@ module Views.SelectableList exposing (Config, State, emptyState, setFocus, view)
 import Entities.SelectionData as SelectionData exposing (SelectionData)
 import Helpers.KeyboardNavigation as KeyboardNavigation exposing (Direction(..), FocusResult, Key(..))
 import Html exposing (Attribute, Html, button, div, h4, input, li, text, ul)
-import Html.Attributes exposing (attribute, class, classList, id, tabindex)
+import Html.Attributes exposing (attribute, class, classList, id, tabindex, placeholder, value)
 import Html.Events as E
 import Json.Decode as Json
 
@@ -34,8 +34,9 @@ emptyState =
 
 view : Config msg item -> State -> Html msg
 view config state =
-    div []
-        [ tagsView config state, listView config state ]
+    div [class "selectablelist"]
+        [ tagsView config state,
+          listView config state ]
 
 
 tagsView : Config msg item -> State -> Html msg
@@ -47,7 +48,9 @@ tagsView config state =
             )
         , input
             [ id "searchbox"
+            , placeholder "Search..."
             , tabindex 0
+            , value (getSearchText state)
             , onInput config state
             , KeyboardNavigation.onKeyDown (handleKeyDown config state Nothing) validKeys
             ]
@@ -60,10 +63,11 @@ validKeys =
     [ RETURN, DOWN, UP, LEFT, RIGHT, DELETE ]
 
 
+
 tagView : Config msg item -> State -> Int -> item -> Html msg
 tagView config state idx item =
     li
-        [ class "tag"
+      [ class "tag"
         , id (tagElementId idx)
         , tabindex -1
         , KeyboardNavigation.onKeyDown (handleKeyDown config state (Just item)) validKeys
@@ -76,7 +80,7 @@ tagView config state idx item =
 listView : Config msg item -> State -> Html msg
 listView config state =
     div []
-        [ ul []
+        [ ul [class "itemslist"]
             (filteredItems config state
                 |> List.map (itemView config state)
             )
@@ -99,7 +103,7 @@ itemView config state item =
     in
     li
         [ onClick config state item True
-        , classList [ ( "selected", isItemSelected ), ( "active", isItemActive ) ]
+        , classList [ ( "selected", isItemSelected ), ( "active", isItemActive ), ("item", True) ]
         ]
         [ text (config.listDisplayText item)
         ]
@@ -130,9 +134,45 @@ onClick config state item newSelectionStatus =
 
 onInput : Config msg item -> State -> Attribute msg
 onInput config state =
+    let
+      updateFunc str =
+          let
+            filteredState =
+              updateSearchText str state
+
+            filteredItemIds =
+              filteredItems config filteredState
+              |> List.map config.itemId
+
+            currentMaybeActiveId =
+              getMaybeActiveId state
+
+            maybeFirstFilteredItemId =
+              case filteredItems config filteredState |> List.head of
+                Nothing -> Nothing
+                Just item ->
+                  Just (config.itemId item)
+
+            maybeActiveItemId =
+              case (currentMaybeActiveId, maybeFirstFilteredItemId) of
+                (Nothing, maybeFirstFilteredItemId) ->
+                  maybeFirstFilteredItemId
+                (Just itemId, maybeFirstFilteredItemId) ->
+                  if List.member itemId filteredItemIds then
+                    Just itemId
+                  else
+                    maybeFirstFilteredItemId
+
+
+
+          in
+            filteredState
+              |> updateMaybeActiveId maybeActiveItemId
+
+    in
     E.on "input" <|
         Json.map config.toMsg <|
-            Json.map (\str -> updateSearchText str state) E.targetValue
+            Json.map updateFunc E.targetValue
 
 
 handleKeyDown : Config msg item -> State -> Maybe item -> Key -> msg
@@ -278,6 +318,9 @@ getMaybeFocusId : State -> Maybe String
 getMaybeFocusId (State _ maybeFocusId _ _) =
     maybeFocusId
 
+getSearchText : State -> String
+getSearchText (State _ _ _ searchText) =
+    searchText
 
 
 --Helpers

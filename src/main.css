@@ -8,12 +8,18 @@ img {
   max-width: 200px;
 }
 
+.selectablelist{
+  width: 60%;
+  display: inline-block;
+}
 .selected{
   color: gray;
+
 }
 
 .tagsview{
-
+  text-align: left;
+  border-bottom: solid 1px gray;
 }
 .tagList{
   display: inline-block;
@@ -21,8 +27,8 @@ img {
 }
 .tag{
   display: inline-block;
-  padding: 10px;
-  margin: 5px;
+  padding: 0px 5px;
+  margin-right: 5px;
   list-style-position: inside;
   border: solid 1px black;
   border-radius: 25px;
@@ -39,6 +45,23 @@ button{
 
 #searchbox{
   display: inline-block;
-  border: solid 1px blue;
+  border: none;
+  margin: 5px;
 
 }
+
+.itemslist{
+  list-style-type: none;
+  padding: 0px;
+}
+
+.item{
+  border-bottom: solid 1px gray;
+  padding: 10px;
+  text-align: left;
+}
+
+#searchbox:focus {
+    outline-color: transparent;
+    outline-style: none;
+  }
