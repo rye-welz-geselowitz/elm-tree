@@ -1,8 +1,9 @@
 module App exposing (..)
 
+import Helpers.KeyboardNavigation exposing (FocusResult)
 import Html exposing (Html, div, img, text)
 import Views.SelectableList as SelectableList
-import Helpers.KeyboardNavigation exposing (FocusResult)
+
 
 type alias Model =
     { selectableListState : SelectableList.State
@@ -25,7 +26,7 @@ init path =
 
 type Msg
     = SetSelectableListState SelectableList.State
-      | PostFocus FocusResult
+    | PostFocus FocusResult
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -35,13 +36,15 @@ update msg model =
             ( { model | selectableListState = newState }
             , SelectableList.setFocus newState PostFocus
             )
+
         PostFocus res ->
-          (model, Cmd.none)
+            ( model, Cmd.none )
 
 
 view : Model -> Html Msg
 view model =
-    div []
+    div
+        []
         [ SelectableList.view listConfig model.selectableListState ]
 
 
@@ -55,12 +58,15 @@ listConfig =
     , filterFunction = filterFunction
     }
 
+
 filterFunction : String -> User -> Bool
 filterFunction searchText item =
-  String.contains (cleanString searchText) (cleanString item.name)
+    String.contains (cleanString searchText) (cleanString item.name)
 
-cleanString  str =
-  str |> String.trim |> String.toLower
+
+cleanString str =
+    str |> String.trim |> String.toLower
+
 
 itemList =
     [ { id = 0, name = "Elana" }
