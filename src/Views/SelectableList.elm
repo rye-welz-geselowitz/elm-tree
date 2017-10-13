@@ -5,12 +5,12 @@ import Entities.SelectableList
         ( Config
         , State
         , filteredItems
-        , getSearchText
         , isItemActive
         , isItemSelected
         , onClick
         , onInput
         , onKeyDown
+        , searchText
         , selectedItems
         , tagElementId
         )
@@ -40,7 +40,7 @@ tagsView config state =
             [ id "searchbox"
             , placeholder "Search..."
             , tabindex 0
-            , value (getSearchText state)
+            , value (searchText state)
             , onInput config state
             , onKeyDown config state
             ]
