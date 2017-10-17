@@ -266,16 +266,8 @@ trySelectItem config state maybeActiveId =
 
 tryDeleteItem : Config msg item -> State -> Maybe item -> State
 tryDeleteItem config state maybeCurrentItem =
-    let
-        a =
-            Debug.log "hi" "hello"
-    in
     case maybeCurrentItem of
         Just currentItem ->
-            let
-                d =
-                    Debug.log "this" "is a thing"
-            in
             state
                 |> navigateTags config Previous
                 |> deselectItem config (config.itemId currentItem)
