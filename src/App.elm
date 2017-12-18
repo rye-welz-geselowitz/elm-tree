@@ -1,6 +1,6 @@
 module App exposing (..)
 
-import Html exposing (Html, div)
+import Html exposing (Html, div, text)
 import Tree
 
 
@@ -32,15 +32,42 @@ myItems =
     , { name = "C", id = 3, parentId = Just 1 }
     , { name = "D", id = 4, parentId = Just 2 }
     , { name = "E", id = 5, parentId = Just 4 }
+    , { name = "F", id = 6, parentId = Just 3 }
+    , { name = "G", id = 7, parentId = Just 3 }
     ]
 
 
 view : Model -> Html Msg
 view model =
-    myItems
-        |> Tree.build .id .parentId .name
-        |> Maybe.map (Tree.view identity)
-        |> Maybe.withDefault (div [] [])
+    let
+        maybeTree =
+            myItems
+                |> Tree.build .id .parentId
+    in
+    case maybeTree of
+        Nothing ->
+            div [] []
+
+        Just tree ->
+            div []
+                [ Tree.view .name tree
+                , div []
+                    [ Tree.traverseDepthFirst customCompare tree
+                        |> List.map .name
+                        |> toString
+                        |> text
+                    ]
+                , div []
+                    [ Tree.traverseBreadthFirst customCompare tree
+                        |> List.map .name
+                        |> toString
+                        |> text
+                    ]
+                ]
+
+
+customCompare d1 d2 =
+    compare d1.name d2.name
 
 
 subscriptions : Model -> Sub Msg

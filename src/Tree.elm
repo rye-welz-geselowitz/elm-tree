@@ -1,4 +1,4 @@
-module Tree exposing (build, view)
+module Tree exposing (build, traverseBreadthFirst, traverseDepthFirst, view)
 
 import Date exposing (Date)
 import Html exposing (Html, div, li, text, ul)
@@ -13,29 +13,74 @@ type Data data
     = Data data
 
 
-build : (item -> comparable) -> (item -> Maybe comparable) -> (item -> data) -> List item -> Maybe (Tree comparable data)
-build id parentId data items =
+build :
+    (data -> comparable)
+    -> (data -> Maybe comparable)
+    -> List data
+    -> Maybe (Tree comparable data)
+build id parentId items =
     case List.partition (isRoot parentId) items of
         ( [ root ], rest ) ->
-            Just (attachChildren id parentId data rest root)
+            Just (attachChildren id parentId rest root)
 
         _ ->
             Nothing
 
 
-attachChildren : (item -> comparable) -> (item -> Maybe comparable) -> (item -> data) -> List item -> item -> Tree comparable data
-attachChildren id parentId data candidates item =
+traverseDepthFirst : (data -> data -> Order) -> Tree comparable data -> List data
+traverseDepthFirst sort tree =
+    data tree
+        :: List.concatMap (traverseDepthFirst sort)
+            (children tree |> List.sortWith (compareTrees sort))
+
+
+traverseBreadthFirst : (data -> data -> Order) -> Tree comparable data -> List data
+traverseBreadthFirst sort tree =
+    let
+        d =
+            Debug.log "children" children tree
+    in
+    traverseBreadthFirstHelper sort [ tree ]
+
+
+traverseBreadthFirstHelper : (data -> data -> Order) -> List (Tree comparable data) -> List data
+traverseBreadthFirstHelper sort treeList =
+    case treeList of
+        [] ->
+            []
+
+        trees ->
+            List.concat
+                [ trees |> List.sortWith (compareTrees sort) |> List.map data
+                , traverseBreadthFirstHelper sort (List.concatMap children trees)
+                ]
+
+
+compareTrees : (data -> data -> Order) -> Tree comparable data -> Tree comparable data -> Order
+compareTrees sort t1 t2 =
+    sort (data t1) (data t2)
+
+
+attachChildren :
+    (data -> comparable)
+    -> (data -> Maybe comparable)
+    -> List data
+    -> data
+    -> Tree comparable data
+attachChildren id parentId candidates item =
     let
         ( children, rest ) =
             List.partition (isChild id parentId item) candidates
-
-        childTrees =
-            List.map (attachChildren id parentId data rest) children
     in
-    Tree (id item) (Data (data item)) childTrees
+    Tree (id item) (Data item) <| List.map (attachChildren id parentId rest) children
 
 
-isChild : (item -> comparable) -> (item -> Maybe comparable) -> item -> item -> Bool
+isChild :
+    (item -> comparable)
+    -> (item -> Maybe comparable)
+    -> item
+    -> item
+    -> Bool
 isChild id parentId item candidate =
     case parentId candidate of
         Just someId ->
@@ -53,15 +98,6 @@ isRoot parentId item =
 
         _ ->
             False
-
-
-myItems =
-    [ { name = "A", id = 1, parentId = Nothing }
-    , { name = "B", id = 2, parentId = Just 1 }
-    , { name = "C", id = 3, parentId = Just 1 }
-    , { name = "D", id = 4, parentId = Just 2 }
-    , { name = "E", id = 5, parentId = Just 4 }
-    ]
 
 
 data : Tree comparable data -> data
@@ -85,12 +121,3 @@ nodeView display tree =
         [ div [] [ tree |> data |> display |> text ]
         , ul [ class "children" ] (children tree |> List.map (view display))
         ]
-
-
-
--- main : Html msg
--- main =
---     myItems
---         |> build .id .parentId .name
---         |> Maybe.map (view identity)
---         |> Maybe.withDefault (div [] [])
