@@ -1,83 +1,46 @@
 module App exposing (..)
 
-import Entities.SelectableList as SelectableList
-import Helpers.KeyboardNavigation exposing (FocusResult)
-import Html exposing (Html, div, h4, img, text)
-import Views.SelectableList as SelectableListView
+import Html exposing (Html, div)
+import Tree
 
 
 type alias Model =
-    { selectableListState : SelectableList.State
-    }
+    {}
 
 
-type alias User =
-    { id : Int
-    , name : String
-    }
-
-
-init : String -> ( Model, Cmd Msg )
-init path =
-    ( { selectableListState = SelectableList.emptyState
-      }
+init : ( Model, Cmd Msg )
+init =
+    ( {}
     , Cmd.none
     )
 
 
 type Msg
-    = SetSelectableListState SelectableList.State
-    | PostFocus FocusResult
+    = NoOp
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        SetSelectableListState newState ->
-            ( { model | selectableListState = newState }
-            , SelectableList.setFocus newState PostFocus
-            )
-
-        PostFocus res ->
+        NoOp ->
             ( model, Cmd.none )
+
+
+myItems =
+    [ { name = "A", id = 1, parentId = Nothing }
+    , { name = "B", id = 2, parentId = Just 1 }
+    , { name = "C", id = 3, parentId = Just 1 }
+    , { name = "D", id = 4, parentId = Just 2 }
+    , { name = "E", id = 5, parentId = Just 4 }
+    ]
 
 
 view : Model -> Html Msg
 view model =
-    div
-        []
-        [ h4 [] [ text "Select Your Favorite..." ]
-        , SelectableListView.view listConfig model.selectableListState
-        ]
-
-
-listConfig : SelectableList.Config Msg User
-listConfig =
-    { toMsg = SetSelectableListState
-    , itemId = \item -> item.id
-    , items = itemList
-    , tagDisplayText = \item -> item.name
-    , listDisplayText = \item -> item.name
-    , filterFunction = filterFunction
-    }
-
-
-filterFunction : String -> User -> Bool
-filterFunction searchText item =
-    String.contains (cleanString searchText) (cleanString item.name)
-
-
-cleanString str =
-    str |> String.trim |> String.toLower
-
-
-itemList =
-    [ { id = 0, name = "Elana" }
-    , { id = 1, name = "Ellie" }
-    , { id = 2, name = "Bellie" }
-    , { id = 3, name = "Gesellie" }
-    , { id = 4, name = "Wits" }
-    ]
+    myItems
+        |> Tree.build .id .parentId .name
+        |> Maybe.map (Tree.view identity)
+        |> Maybe.withDefault (div [] [])
 
 
 subscriptions : Model -> Sub Msg
