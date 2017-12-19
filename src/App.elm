@@ -43,7 +43,6 @@ view model =
         maybeTree =
             myItems
                 |> Tree.build .id .parentId
-
     in
     case maybeTree of
         Nothing ->
@@ -52,9 +51,9 @@ view model =
         Just tree ->
             div []
                 [ tree
-                  |> Tree.map (\i -> {i | name = i.name++"2"})
-                  |> Tree.update 3 (\i -> {i | name = "YO!!!!"})
-                  |> Tree.view nodeView customCompare
+                    |> Tree.map (\i -> { i | name = i.name ++ "2" })
+                    |> Tree.update 3 (\i -> { i | name = "YO!!!!" })
+                    |> Tree.view nodeView customCompare
                 , div []
                     [ Tree.traverseDepthFirst customCompare tree
                         |> List.map .name
@@ -69,13 +68,18 @@ view model =
                     ]
                 ]
 
-type alias Node = {
-  name: String, id: Int, parentId: Maybe Int
-}
 
-nodeView :  Node -> Html Msg
+type alias Node =
+    { name : String
+    , id : Int
+    , parentId : Maybe Int
+    }
+
+
+nodeView : Node -> Html Msg
 nodeView node =
-  div [] [text node.name]
+    div [] [ text node.name ]
+
 
 customCompare d1 d2 =
     compare d2.name d1.name

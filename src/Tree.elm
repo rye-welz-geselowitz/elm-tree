@@ -1,7 +1,6 @@
-module Tree exposing (build, traverseBreadthFirst, traverseDepthFirst, view, map, update)
+module Tree exposing (build, map, traverseBreadthFirst, traverseDepthFirst, update, view)
 
 import Html exposing (Html, div, li, text, ul)
-
 
 
 type Tree comparable data
@@ -10,6 +9,7 @@ type Tree comparable data
 
 type Data data
     = Data data
+    | SelectableData Bool data
 
 
 build :
@@ -26,39 +26,60 @@ build id parentId items =
             Nothing
 
 
-map : (data-> data )-> Tree comparable data -> Tree comparable data
-map fn tree=
-  conditionalMap (\_ -> True) fn tree
+map : (data -> data) -> Tree comparable data -> Tree comparable data
+map fn tree =
+    conditionalMap (\_ -> True) fn tree
 
 
-update : comparable -> (data-> data )-> Tree comparable data -> Tree comparable data
-update itemId fn tree=
-  conditionalMap (\t -> id t == itemId) fn tree
+update : comparable -> (data -> data) -> Tree comparable data -> Tree comparable data
+update itemId fn tree =
+    conditionalMap (\t -> id t == itemId) fn tree
 
-conditionalMap : (Tree comparable data -> Bool) -> (data-> data )-> Tree comparable data -> Tree comparable data
+
+conditionalMap :
+    (Tree comparable data -> Bool)
+    -> (data -> data)
+    -> Tree comparable data
+    -> Tree comparable data
 conditionalMap condition fn tree =
-  List.map (conditionalMap condition fn) (children tree)
-    |> Tree (id tree) (Data (conditionalData condition fn tree))
+    List.map (conditionalMap condition fn) (children tree)
+        |> Tree (id tree) (Data (conditionalData condition fn tree))
 
+
+conditionalData :
+    (Tree comparable data -> Bool)
+    -> (data -> data)
+    -> Tree comparable data
+    -> data
 conditionalData condition fn tree =
-  if condition tree then
-    fn (data tree)
-  else
-    data tree
+    if condition tree then
+        fn (data tree)
+    else
+        data tree
 
-traverseDepthFirst : (data -> data -> Order) -> Tree comparable data -> List data
+
+traverseDepthFirst :
+    (data -> data -> Order)
+    -> Tree comparable data
+    -> List data
 traverseDepthFirst sort tree =
     data tree
         :: List.concatMap (traverseDepthFirst sort)
             (children tree |> List.sortWith (compareTrees sort))
 
 
-traverseBreadthFirst : (data -> data -> Order) -> Tree comparable data -> List data
+traverseBreadthFirst :
+    (data -> data -> Order)
+    -> Tree comparable data
+    -> List data
 traverseBreadthFirst sort tree =
     traverseBreadthFirstHelper sort [ tree ]
 
 
-traverseBreadthFirstHelper : (data -> data -> Order) -> List (Tree comparable data) -> List data
+traverseBreadthFirstHelper :
+    (data -> data -> Order)
+    -> List (Tree comparable data)
+    -> List data
 traverseBreadthFirstHelper sort treeList =
     case treeList of
         [] ->
@@ -71,7 +92,11 @@ traverseBreadthFirstHelper sort treeList =
                 ]
 
 
-compareTrees : (data -> data -> Order) -> Tree comparable data -> Tree comparable data -> Order
+compareTrees :
+    (data -> data -> Order)
+    -> Tree comparable data
+    -> Tree comparable data
+    -> Order
 compareTrees sort t1 t2 =
     sort (data t1) (data t2)
 
@@ -116,8 +141,13 @@ isRoot parentId item =
 
 
 data : Tree comparable data -> data
-data (Tree _ (Data data) _) =
-    data
+data (Tree _ data _) =
+    case data of
+        Data d ->
+            d
+
+        SelectableData _ d ->
+            d
 
 
 children : Tree comparable data -> List (Tree comparable data)
@@ -129,12 +159,21 @@ id : Tree comparable data -> comparable
 id (Tree id _ _) =
     id
 
-view : (data -> Html msg)-> (data -> data -> Order) -> Tree comparable data -> Html msg
+
+view :
+    (data -> Html msg)
+    -> (data -> data -> Order)
+    -> Tree comparable data
+    -> Html msg
 view render sort root =
     ul [] [ nodeView render sort root ]
 
 
-nodeView : (data -> Html msg) -> (data -> data -> Order) ->  Tree comparable data -> Html msg
+nodeView :
+    (data -> Html msg)
+    -> (data -> data -> Order)
+    -> Tree comparable data
+    -> Html msg
 nodeView render sort tree =
     li []
         [ data tree |> render
