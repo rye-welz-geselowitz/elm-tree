@@ -1,8 +1,7 @@
 module Tree exposing (build, traverseBreadthFirst, traverseDepthFirst, view)
 
-import Date exposing (Date)
 import Html exposing (Html, div, li, text, ul)
-import Html.Attributes exposing (class)
+
 
 
 type Tree comparable data
@@ -36,10 +35,6 @@ traverseDepthFirst sort tree =
 
 traverseBreadthFirst : (data -> data -> Order) -> Tree comparable data -> List data
 traverseBreadthFirst sort tree =
-    let
-        d =
-            Debug.log "children" children tree
-    in
     traverseBreadthFirstHelper sort [ tree ]
 
 
@@ -110,14 +105,14 @@ children (Tree _ _ children) =
     children
 
 
-view : (data -> String) -> Tree comparable data -> Html msg
-view display root =
-    ul [] [ nodeView display root ]
+view : (data -> Html msg)-> (data -> data -> Order) -> Tree comparable data -> Html msg
+view render sort root =
+    ul [] [ nodeView render sort root ]
 
 
-nodeView : (data -> String) -> Tree comparable data -> Html msg
-nodeView display tree =
-    li [ class "sibling" ]
-        [ div [] [ tree |> data |> display |> text ]
-        , ul [ class "children" ] (children tree |> List.map (view display))
+nodeView : (data -> Html msg) -> (data -> data -> Order) ->  Tree comparable data -> Html msg
+nodeView render sort tree =
+    li []
+        [ data tree |> render
+        , ul [] (children tree |> List.sortWith (compareTrees sort) |> List.map (view render sort))
         ]

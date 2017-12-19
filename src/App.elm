@@ -50,7 +50,7 @@ view model =
 
         Just tree ->
             div []
-                [ Tree.view .name tree
+                [ Tree.view nodeView customCompare tree
                 , div []
                     [ Tree.traverseDepthFirst customCompare tree
                         |> List.map .name
@@ -65,9 +65,16 @@ view model =
                     ]
                 ]
 
+type alias Node = {
+  name: String, id: Int, parentId: Maybe Int
+}
+
+nodeView :  Node -> Html Msg
+nodeView node =
+  div [] [text node.name]
 
 customCompare d1 d2 =
-    compare d1.name d2.name
+    compare d2.name d1.name 
 
 
 subscriptions : Model -> Sub Msg
