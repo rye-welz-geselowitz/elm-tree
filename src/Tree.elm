@@ -1,4 +1,12 @@
-module Tree exposing (build, map, traverseBreadthFirst, traverseDepthFirst, update, view)
+module Tree exposing (Tree,
+                      build,
+                      map,
+                      flattenBreadthFirst,
+                      flattenDepthFirst,
+                      update,
+                      view,
+                      recursiveSelection,
+                      updateRoot, data)
 
 import Html exposing (Html, div, li, text, ul)
 
@@ -9,7 +17,40 @@ type Tree comparable data
 
 type Data data
     = Data data
-    | SelectableData Bool data
+
+recursiveSelection : comparable -> (data -> data) -> (data -> Bool) -> Tree comparable data -> Tree comparable data
+recursiveSelection itemId fn check tree =
+  if (id tree == itemId) then
+    conditionalMap (\_ -> True) fn tree
+  else
+    matchChildren itemId fn check tree
+
+
+matchChildren : comparable -> (data -> data) -> (data -> Bool) -> Tree comparable data -> Tree comparable data
+matchChildren  itemId fn check tree =
+    let
+      newChildren =
+        List.map (recursiveSelection itemId fn check) (children tree)
+    in
+    tree
+     |> updateChildren newChildren
+     |> updateData (conditionalData (\_ -> (checkSelected newChildren check)) fn tree)
+
+checkSelected children check =
+  let
+    filtered =
+      children |> List.map data |> List.filter check
+  in
+  (List.length filtered == List.length children) && List.length children > 0
+
+{- exposed -}
+view :
+    (data -> Html msg)
+    -> (data -> data -> Order)
+    -> Tree comparable data
+    -> Html msg
+view render sort root =
+    ul [] [ nodeView render sort root ]
 
 
 build :
@@ -35,7 +76,31 @@ update : comparable -> (data -> data) -> Tree comparable data -> Tree comparable
 update itemId fn tree =
     conditionalMap (\t -> id t == itemId) fn tree
 
+updateRoot : (data -> data) -> Tree comparable data -> Tree comparable data
+updateRoot fn tree =
+    tree |> updateData ( fn (data tree) )
 
+
+flattenDepthFirst :
+    (data -> data -> Order)
+    -> Tree comparable data
+    -> List data
+flattenDepthFirst sort tree =
+    data tree
+        :: List.concatMap (flattenDepthFirst sort)
+            (children tree |> List.sortWith (compareTrees sort))
+
+
+flattenBreadthFirst :
+    (data -> data -> Order)
+    -> Tree comparable data
+    -> List data
+flattenBreadthFirst sort tree =
+    traverseBreadthFirstHelper sort [ tree ]
+
+
+
+{-helpers-}
 conditionalMap :
     (Tree comparable data -> Bool)
     -> (data -> data)
@@ -56,25 +121,6 @@ conditionalData condition fn tree =
         fn (data tree)
     else
         data tree
-
-
-traverseDepthFirst :
-    (data -> data -> Order)
-    -> Tree comparable data
-    -> List data
-traverseDepthFirst sort tree =
-    data tree
-        :: List.concatMap (traverseDepthFirst sort)
-            (children tree |> List.sortWith (compareTrees sort))
-
-
-traverseBreadthFirst :
-    (data -> data -> Order)
-    -> Tree comparable data
-    -> List data
-traverseBreadthFirst sort tree =
-    traverseBreadthFirstHelper sort [ tree ]
-
 
 traverseBreadthFirstHelper :
     (data -> data -> Order)
@@ -141,13 +187,8 @@ isRoot parentId item =
 
 
 data : Tree comparable data -> data
-data (Tree _ data _) =
-    case data of
-        Data d ->
-            d
-
-        SelectableData _ d ->
-            d
+data (Tree _ (Data data) _) =
+    data
 
 
 children : Tree comparable data -> List (Tree comparable data)
@@ -155,18 +196,22 @@ children (Tree _ _ children) =
     children
 
 
+updateChildren : List (Tree comparable data) -> Tree comparable data -> Tree comparable data
+updateChildren newChildren (Tree id data children) =
+    Tree id data newChildren
+
+
+updateId : comparable -> Tree comparable data  -> Tree comparable data
+updateId newId (Tree id data children) =
+    Tree newId data children
+
+updateData : data -> Tree comparable data -> Tree comparable data
+updateData data (Tree id _ children) =
+    Tree id (Data data) children
+
 id : Tree comparable data -> comparable
 id (Tree id _ _) =
     id
-
-
-view :
-    (data -> Html msg)
-    -> (data -> data -> Order)
-    -> Tree comparable data
-    -> Html msg
-view render sort root =
-    ul [] [ nodeView render sort root ]
 
 
 nodeView :

@@ -1,67 +1,74 @@
 module App exposing (..)
 
-import Html exposing (Html, div, text)
-import Tree
-
+import Html exposing (Html, div, text, input)
+import Html.Attributes exposing (type_, checked)
+import Tree exposing (Tree)
+import Html.Events exposing (onClick)
+import SelectableTree exposing (SelectableTree)
 
 type alias Model =
-    {}
+    {
+    maybeTree: Maybe (Tree Int Node)
+  }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( {}
+    ( {maybeTree  = myItems |> Tree.build .id .parentId}
     , Cmd.none
     )
 
 
 type Msg
-    = NoOp
+    = ToggleSelect Node
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        NoOp ->
-            ( model, Cmd.none )
+        ToggleSelect node ->
+            let
+              selectStatus = not node.selected
+
+              select = Tree.recursiveSelection node.id
+                (\n -> {n | selected = selectStatus})
+                (\n -> n.selected == selectStatus)
+
+              tree = model.maybeTree
+                      |> Maybe.map select
+            in
+            ( { model | maybeTree = tree}, Cmd.none )
 
 
 myItems =
-    [ { name = "A", id = 1, parentId = Nothing }
-    , { name = "B", id = 2, parentId = Just 1 }
-    , { name = "C", id = 3, parentId = Just 1 }
-    , { name = "D", id = 4, parentId = Just 2 }
-    , { name = "E", id = 5, parentId = Just 4 }
-    , { name = "F", id = 6, parentId = Just 3 }
-    , { name = "G", id = 7, parentId = Just 3 }
+    [ Node "A" 1 Nothing False,
+      Node "B" 2 (Just 1) False,
+      Node "C" 3 (Just 1) False,
+      Node "D" 4 (Just 2) False,
+      Node "E" 5 (Just 4) False,
+      Node "F" 6 (Just 3) False,
+      Node "G" 7 (Just 3) False
     ]
 
 
 view : Model -> Html Msg
 view model =
-    let
-        maybeTree =
-            myItems
-                |> Tree.build .id .parentId
-    in
-    case maybeTree of
+    case model.maybeTree of
         Nothing ->
             div [] []
 
         Just tree ->
             div []
                 [ tree
-                    |> Tree.map (\i -> { i | name = i.name ++ "2" })
-                    |> Tree.update 3 (\i -> { i | name = "YO!!!!" })
                     |> Tree.view nodeView customCompare
                 , div []
-                    [ Tree.traverseDepthFirst customCompare tree
+                    [ Tree.flattenDepthFirst customCompare tree
                         |> List.map .name
                         |> toString
                         |> text
                     ]
                 , div []
-                    [ Tree.traverseBreadthFirst customCompare tree
+                    [ Tree.flattenBreadthFirst customCompare tree
                         |> List.map .name
                         |> toString
                         |> text
@@ -73,12 +80,19 @@ type alias Node =
     { name : String
     , id : Int
     , parentId : Maybe Int
+    , selected : Bool
     }
 
 
 nodeView : Node -> Html Msg
 nodeView node =
-    div [] [ text node.name ]
+    div [] [
+    input [type_ "checkbox",
+          checked node.selected,
+          onClick (ToggleSelect node)
+
+    ] [],
+    text node.name]
 
 
 customCompare d1 d2 =
