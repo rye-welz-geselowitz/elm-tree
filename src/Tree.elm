@@ -37,15 +37,14 @@ update itemId fn tree=
 
 conditionalMap : (Tree comparable data -> Bool) -> (data-> data )-> Tree comparable data -> Tree comparable data
 conditionalMap condition fn tree =
-  let
-    newData =
-      if condition tree then
-        fn (data tree)
-      else
-        data tree
-  in
-  List.map (conditionalMap condition fn) (children tree) |> Tree (id tree) (Data newData)
+  List.map (conditionalMap condition fn) (children tree)
+    |> Tree (id tree) (Data (conditionalData condition fn tree))
 
+conditionalData condition fn tree =
+  if condition tree then
+    fn (data tree)
+  else
+    data tree
 
 traverseDepthFirst : (data -> data -> Order) -> Tree comparable data -> List data
 traverseDepthFirst sort tree =
