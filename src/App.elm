@@ -43,6 +43,7 @@ view model =
         maybeTree =
             myItems
                 |> Tree.build .id .parentId
+
     in
     case maybeTree of
         Nothing ->
@@ -50,7 +51,10 @@ view model =
 
         Just tree ->
             div []
-                [ Tree.view nodeView customCompare tree
+                [ tree
+                  |> Tree.map (\i -> {i | name = i.name++"2"})
+                  |> Tree.update 3 (\i -> {i | name = "YO!!!!"})
+                  |> Tree.view nodeView customCompare
                 , div []
                     [ Tree.traverseDepthFirst customCompare tree
                         |> List.map .name
@@ -74,7 +78,7 @@ nodeView node =
   div [] [text node.name]
 
 customCompare d1 d2 =
-    compare d2.name d1.name 
+    compare d2.name d1.name
 
 
 subscriptions : Model -> Sub Msg

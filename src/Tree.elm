@@ -1,4 +1,4 @@
-module Tree exposing (build, traverseBreadthFirst, traverseDepthFirst, view)
+module Tree exposing (build, traverseBreadthFirst, traverseDepthFirst, view, map, update)
 
 import Html exposing (Html, div, li, text, ul)
 
@@ -24,6 +24,27 @@ build id parentId items =
 
         _ ->
             Nothing
+
+
+map : (data-> data )-> Tree comparable data -> Tree comparable data
+map fn tree=
+  conditionalMap (\_ -> True) fn tree
+
+
+update : comparable -> (data-> data )-> Tree comparable data -> Tree comparable data
+update itemId fn tree=
+  conditionalMap (\t -> id t == itemId) fn tree
+
+conditionalMap : (Tree comparable data -> Bool) -> (data-> data )-> Tree comparable data -> Tree comparable data
+conditionalMap condition fn tree =
+  let
+    newData =
+      if condition tree then
+        fn (data tree)
+      else
+        data tree
+  in
+  List.map (conditionalMap condition fn) (children tree) |> Tree (id tree) (Data newData)
 
 
 traverseDepthFirst : (data -> data -> Order) -> Tree comparable data -> List data
@@ -104,6 +125,10 @@ children : Tree comparable data -> List (Tree comparable data)
 children (Tree _ _ children) =
     children
 
+
+id : Tree comparable data -> comparable
+id (Tree id _ _) =
+    id
 
 view : (data -> Html msg)-> (data -> data -> Order) -> Tree comparable data -> Html msg
 view render sort root =
